@@ -52,7 +52,3 @@ Example data:
 | 3        | 1         | 8/15/2021 16:46:20  |
 | 4        | 3         | 8/15/2021 16:46:21  |
 
-## Next Steps
-1. Implement SQL queries to identify at-risk users
-2. Create automated alerts for the Customer Success Team
-3. Set up regular reporting on churn risk metrics

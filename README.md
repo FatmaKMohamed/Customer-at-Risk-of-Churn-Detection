@@ -1,22 +1,58 @@
-##Project Description:
-This project identifies at-risk customers likely to churn by analyzing drops in their platform activity.
+# Customer Churn Detection: Tracking User Activity Decline
 
-##Key Logic:
-- An active user is defined as someone with >500 visits/month over a 3-month period.
+## Project Overview
+This project identifies at-risk customers who are likely to stop using the service by analyzing drops in their platform activity.
 
-- A user is flagged as at-risk if their visits in the last 30 days drop by >50% compared to their previous 3-month average.
+## How It Works
+- **Active User Definition**: A user is considered "active" if they have **>500 visits/month** (averaged over 3 months).
+- **At-Risk Flag**: A user is flagged if their visits in the **last 30 days** drop by **>50%** compared to their previous 3-month average.
+- **Action**: The Customer Success Team contacts these users proactively to prevent churn.
 
-- The Customer Success Team uses this data to proactively engage users before they churn.
+## Database Structure
+### Tables
 
-##Database Schema:
-- Companies – Stores company details.
+#### 1. `Companies`
+Stores company information.
+- `id` (Unique identifier)
+- `name` (Company name)
 
-   id, name (e.g., Amazon, Google)
+Example data:
+| id | name      |
+|----|-----------|
+| 1  | Amazon    |
+| 2  | Microsoft |
+| 3  | Google    |
 
-- Companys_members – Tracks members and their company affiliations.
+#### 2. `Companys_members`
+Tracks which members belong to which companies.
+- `member_id` (Unique user identifier)
+- `company_id` (References Companies.id)
+- `name` (Member name)
+- `email` (Member email)
+- `is_owner` (TRUE/FALSE if member owns company account)
 
-   member_id, company_id, name, email, is_owner (boolean)
+Example data:
+| member_id | company_id | name  | email            | is_owner |
+|-----------|------------|-------|------------------|----------|
+| 1         | 3          | Mark  | mark@google.com  | TRUE     |
+| 2         | 1          | Sam   | sam@amazon.com   | FALSE    |
+| 3         | 1          | David | dav@amazon.com   | TRUE     |
 
-- Members_visits – Logs each user’s activity with timestamps.
+#### 3. `Members_visits`
+Logs every time a member uses the platform.
+- `visit_id` (Unique visit identifier)
+- `member_id` (References Companys_members.member_id)
+- `created_at` (Timestamp of visit)
 
-   visit_id, member_id, created_at
+Example data:
+| visit_id | member_id | created_at          |
+|----------|-----------|---------------------|
+| 1        | 1         | 8/15/2021 16:46:07  |
+| 2        | 2         | 8/15/2021 16:46:18  |
+| 3        | 1         | 8/15/2021 16:46:20  |
+| 4        | 3         | 8/15/2021 16:46:21  |
+
+## Next Steps
+1. Implement SQL queries to identify at-risk users
+2. Create automated alerts for the Customer Success Team
+3. Set up regular reporting on churn risk metrics

@@ -1,0 +1,74 @@
+-- Active users
+WITH Active_users AS
+  (SELECT member_id
+   FROM members_visits
+   WHERE member_id NOT IN
+   (SELECT member_id FROM
+   (SELECT member_id, MONTH(created_at) AS MONTH, COUNT(visit_id) AS visit_count
+    FROM members_visits
+    WHERE created_at < DATE_SUB('2021-10-31', INTERVAL 30 DAY)
+    GROUP BY member_id, MONTH(created_at)
+    HAVING COUNT(visit_id) < 500)T)),
+
+
+
+-- Visits_last_30_days 
+visits_last_30_days AS
+  (SELECT C.company_id,
+          COUNT(M.visit_id) AS Visits_last_30_days
+   FROM members_visits M
+   JOIN companys_members C ON M.member_id = C.member_id
+   WHERE M.created_at BETWEEN DATE_SUB('2021-10-31', INTERVAL 30 DAY) AND '2021-10-31'
+   GROUP BY C.company_id),
+
+
+
+-- AVG Visits prev 3 months
+Average_Visits_of_previous_3_months AS
+  (SELECT C.company_id,
+          COUNT(M.visit_id) / 3 AS Average_Visits_of_previous_3_months
+   FROM members_visits M
+   JOIN companys_members C ON M.member_id = C.member_id
+   WHERE M.created_at BETWEEN DATE_SUB('2021-10-31', INTERVAL 120 DAY) AND DATE_SUB('2021-10-31', INTERVAL 30 DAY)
+   GROUP BY C.company_id),
+
+
+
+-- Percentage of drop
+Percentage_of_drop AS
+  (SELECT V.*,
+          A.Average_Visits_of_previous_3_months,
+          CASE
+              WHEN V.Visits_last_30_days > A.Average_Visits_of_previous_3_months THEN 0
+              ELSE ROUND(((V.Visits_last_30_days - A.Average_Visits_of_previous_3_months) / A.Average_Visits_of_previous_3_months) * 100, 2) * -1
+          END AS Percentage_of_drop
+   FROM visits_last_30_days V
+   JOIN Average_Visits_of_previous_3_months A ON V.company_id = A.company_id),
+
+
+
+
+-- Main Query
+SELECT C.company_id AS Company_ID,
+       CO.name AS Company_Name,
+       GROUP_CONCAT(C.email SEPARATOR ', ') AS Company_Owners_Emails,
+       P.Percentage_of_drop,
+       P.Average_Visits_of_previous_3_months,
+       P.Visits_last_30_days,
+       CASE
+           WHEN Percentage_of_drop > 50 THEN 'Y'
+           ELSE 'N'
+       END AS is_at_risk_of_churn
+FROM Percentage_of_drop P
+JOIN companies CO ON CO.id = P.company_id
+JOIN companys_members C ON C.company_id = CO.id
+WHERE C.is_owner = TRUE
+  AND C.member_id IN
+    (SELECT member_id
+     FROM Active_users)
+GROUP BY C.company_id,
+         CO.name,
+         P.Percentage_of_drop,
+         P.Average_Visits_of_previous_3_months,
+         P.Visits_last_30_days;
+
